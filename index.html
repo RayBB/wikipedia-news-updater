@@ -1,1 +1,290 @@
-<h1>hello</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia Changes Timeline</title>
+    
+    <!-- Using Vue.js from a CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Google Fonts for a similar look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Tiempos+Headline:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        #app {
+            max-width: 700px;
+            margin: auto;
+        }
+        
+        .page-header h1 {
+            font-family: 'Tiempos Headline', 'Georgia', serif;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #1a1a1a;
+        }
+        
+        .page-header .last-checked {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-controls {
+            background-color: #ffffff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 2.5rem;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .filter-controls strong {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .filter-controls label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .filter-controls input[type="checkbox"] {
+            margin-right: 8px;
+            /* Simple custom checkbox style */
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            position: relative;
+            top: -1px;
+            cursor: pointer;
+        }
+
+        .filter-controls input[type="checkbox"]:checked {
+            background-color: #3f51b5;
+            border-color: #3f51b5;
+        }
+        
+        .filter-controls input[type="checkbox"]:checked::after {
+            content: '✔';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 0px;
+            left: 2px;
+        }
+
+
+        .timeline-item {
+            position: relative;
+            padding-left: 50px;
+            padding-bottom: 40px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 5px;
+            bottom: -5px;
+            width: 2px;
+            background-color: #e0e0e0;
+        }
+        
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 12px;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #f0f2f5;
+            border: 2px solid #aaa;
+            z-index: 1;
+        }
+
+        .timestamp {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 15px;
+            padding-top: 2px;
+        }
+
+        .content-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .importance-tag {
+            display: inline-block;
+            font-weight: bold;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .importance-medium { background-color: #fff0c2; color: #7a5f00; }
+        .importance-low { background-color: #e3f2fd; color: #1e88e5; }
+        .importance-trivial { background-color: #f5f5f5; color: #616161; }
+        
+        .summary-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 0;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div class="page-header" v-if="changeData">
+             <h1>{{ formatPageTitle(changeData.page) }}</h1>
+             <p class="last-checked">Last Checked: {{ formatTimestamp(changeData.last_checked) }}</p>
+        </div>
+
+        <div class="filter-controls">
+            <strong>Show Importance:</strong>
+            <label v-for="level in importanceLevels" :key="level">
+                <input type="checkbox" :value="level" v-model="selectedImportances">
+                {{ level }}
+            </label>
+        </div>
+
+        <div v-if="changeData" class="timeline">
+            <!-- Loop over the COMPUTED property 'filteredChanges' -->
+            <div v-for="change in filteredChanges" :key="change.torev" class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timestamp">{{ formatTimestamp(change.torev_timestamp) }}</div>
+                <div class="content-card">
+                    
+                    <div class="importance-tag" :class="getImportanceClass(change.summary.importance)">
+                        {{ change.summary.importance }}
+                    </div>
+
+                    <p class="summary-text">{{ change.summary.summary }}</p>
+                    
+                    <!-- The reason blockquote has been removed -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // NEW: Add a list of all possible importance levels for generating filters
+                    importanceLevels: ['HIGH', 'MEDIUM', 'LOW', 'TRIVIAL'],
+                    
+                    // NEW: selectedImportances will hold the values of checked boxes.
+                    // Default to only 'MEDIUM' as requested.
+                    selectedImportances: ['HIGH', 'MEDIUM'],
+                    
+                    changeData: {
+                        "page": "California_Senate_Bill_79",
+                        "last_checked": "2025-10-18T14:34:31.814508",
+                        "changes": [
+                            {
+                                "fromrev": 1316959601,
+                                "torev": 1317172013,
+                                "torev_timestamp": "2025-10-16T19:19:41Z",
+                                "summary": { "importance": "MEDIUM", "reason": "...", "summary": "Added preliminary analysis estimating SB 79 would zone nearly 1.5 million new housing units in Los Angeles, significantly increasing the city's housing stock." }
+                            },
+                            {
+                                "fromrev": 1316867211,
+                                "torev": 1316959601,
+                                "torev_timestamp": "2025-10-15T13:38:24Z",
+                                "summary": { "importance": "LOW", "reason": "...", "summary": "Added that SB 79's impact could be favorable to construction in order to bring down the costs of housing and living." }
+                            },
+                            {
+                                "fromrev": 1316831030,
+                                "torev": 1316867211,
+                                "torev_timestamp": "2025-10-14T23:28:22Z",
+                                "summary": { "importance": "TRIVIAL", "reason": "...", "summary": "Minor formatting change to the title of Senate Bill 902, with no new information added." }
+                            },
+                            {
+                                "fromrev": 1316696342,
+                                "torev": 1316831030,
+                                "torev_timestamp": "2025-10-14T19:00:13Z",
+                                "summary": { "importance": "MEDIUM", "reason": "...", "summary": "Added information that SB 79 is expected to increase public transit usage and reduce emissions, traffic congestion, and accidents from automobiles if used for construction projects." }
+                            }
+                        ]
+                    }
+                }
+            },
+            // NEW: Add a computed property to handle the filtering logic
+            computed: {
+                filteredChanges() {
+                    // If no boxes are selected, return an empty array
+                    if (!this.selectedImportances.length) {
+                        return [];
+                    }
+                    // Filter the original 'changes' array
+                    return this.changeData.changes.filter(change => 
+                        // Only include a change if its importance is in the 'selectedImportances' array
+                        this.selectedImportances.includes(change.summary.importance)
+                    );
+                }
+            },
+            methods: {
+                formatPageTitle(title) {
+                    return title.replace(/_/g, ' ');
+                },
+                formatTimestamp(isoString) {
+                    if (!isoString) return '';
+                    const date = new Date(isoString);
+                    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'GMT' };
+                    return `${date.toLocaleDateString('en-US', options)} GMT`;
+                },
+                getImportanceClass(importance) {
+                    return 'importance-' + importance.toLowerCase();
+                },
+                async fetchUpdates() {
+                    await fetch('http://127.0.0.1:8000/json/California_Senate_Bill_79')
+                        .then(response => response.json())
+                        .then(data => this.changeData = data)
+                        .catch(error => console.error(error));
+                }
+            },
+            mounted() {
+                this.fetchUpdates();
+            }
+        }).mount('#app');
+    </script>
+
+</body>
+</html>
