@@ -26,6 +26,21 @@
             max-width: 700px;
             margin: auto;
         }
+        .loading-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
         
         .page-header h1 {
             font-family: 'Tiempos Headline', 'Georgia', serif;
@@ -168,9 +183,10 @@
 <body>
 
     <div id="app">
-        <div class="page-header" >
-             <h1>{{ formatPageTitle(title) }}</h1>
-             <p v-if="changeData" class="last-checked">Last Checked: {{ formatTimestamp(changeData.last_checked) }}</p>
+        <div class="page-header">
+            <h1>{{ formatPageTitle(title) }}</h1>
+            <p v-if="changeData" class="last-checked">Last Checked: {{ formatTimestamp(changeData.last_checked) }}</p>
+            <div v-if="changeData.in_progress" class="loading-indicator">Loading...</div>
         </div>
 
         <div class="filter-controls">
@@ -218,7 +234,7 @@
                     changeData: {
                         "page": "California_Senate_Bill_79",
                         "last_checked": "2025-10-18T14:34:31.814508",
-                        "in-progress": false,
+                        "in_progress": false,
                         "changes": [
                             // {
                             //     "fromrev": 1316959601,
@@ -256,9 +272,8 @@
                         return [];
                     }
                     // Filter the original 'changes' array
-                    return this.changeData.changes.filter(change => 
-                        // Only include a change if its importance is in the 'selectedImportances' array
-                        this.selectedImportances.includes(change.summary.importance)
+                    return this.changeData.changes.filter(change =>
+                        change.summary && this.selectedImportances.includes(change.summary.importance)
                     );
                 }
             },

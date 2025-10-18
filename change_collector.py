@@ -203,7 +203,7 @@ def start_page_creation(title, diff_limit=10):
     output = {
         "page": title,
         "last_checked": datetime.now().isoformat(),
-        "in-progress": True,
+        "in_progress": True,
         "changes": new_revisions,
     }
     write_output_to_file(output, title)
@@ -215,7 +215,7 @@ def start_page_creation(title, diff_limit=10):
         revision["summary"] = summary
         write_output_to_file(output, title)
 
-    output["in-progress"] = False
+    output["in_progress"] = False
     write_output_to_file(output, title)
 
 
