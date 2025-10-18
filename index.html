@@ -168,9 +168,9 @@
 <body>
 
     <div id="app">
-        <div class="page-header" v-if="changeData">
-             <h1>{{ formatPageTitle(changeData.page) }}</h1>
-             <p class="last-checked">Last Checked: {{ formatTimestamp(changeData.last_checked) }}</p>
+        <div class="page-header" >
+             <h1>{{ formatPageTitle(title) }}</h1>
+             <p v-if="changeData" class="last-checked">Last Checked: {{ formatTimestamp(changeData.last_checked) }}</p>
         </div>
 
         <div class="filter-controls">
@@ -213,35 +213,36 @@
                     // NEW: selectedImportances will hold the values of checked boxes.
                     // Default to only 'MEDIUM' as requested.
                     selectedImportances: ['HIGH', 'MEDIUM'],
+                    title: new URLSearchParams(window.location.search).get('title'),
                     
                     changeData: {
                         "page": "California_Senate_Bill_79",
                         "last_checked": "2025-10-18T14:34:31.814508",
                         "changes": [
-                            {
-                                "fromrev": 1316959601,
-                                "torev": 1317172013,
-                                "torev_timestamp": "2025-10-16T19:19:41Z",
-                                "summary": { "importance": "MEDIUM", "reason": "...", "summary": "Added preliminary analysis estimating SB 79 would zone nearly 1.5 million new housing units in Los Angeles, significantly increasing the city's housing stock." }
-                            },
-                            {
-                                "fromrev": 1316867211,
-                                "torev": 1316959601,
-                                "torev_timestamp": "2025-10-15T13:38:24Z",
-                                "summary": { "importance": "LOW", "reason": "...", "summary": "Added that SB 79's impact could be favorable to construction in order to bring down the costs of housing and living." }
-                            },
-                            {
-                                "fromrev": 1316831030,
-                                "torev": 1316867211,
-                                "torev_timestamp": "2025-10-14T23:28:22Z",
-                                "summary": { "importance": "TRIVIAL", "reason": "...", "summary": "Minor formatting change to the title of Senate Bill 902, with no new information added." }
-                            },
-                            {
-                                "fromrev": 1316696342,
-                                "torev": 1316831030,
-                                "torev_timestamp": "2025-10-14T19:00:13Z",
-                                "summary": { "importance": "MEDIUM", "reason": "...", "summary": "Added information that SB 79 is expected to increase public transit usage and reduce emissions, traffic congestion, and accidents from automobiles if used for construction projects." }
-                            }
+                            // {
+                            //     "fromrev": 1316959601,
+                            //     "torev": 1317172013,
+                            //     "torev_timestamp": "2025-10-16T19:19:41Z",
+                            //     "summary": { "importance": "MEDIUM", "reason": "...", "summary": "Added preliminary analysis estimating SB 79 would zone nearly 1.5 million new housing units in Los Angeles, significantly increasing the city's housing stock." }
+                            // },
+                            // {
+                            //     "fromrev": 1316867211,
+                            //     "torev": 1316959601,
+                            //     "torev_timestamp": "2025-10-15T13:38:24Z",
+                            //     "summary": { "importance": "LOW", "reason": "...", "summary": "Added that SB 79's impact could be favorable to construction in order to bring down the costs of housing and living." }
+                            // },
+                            // {
+                            //     "fromrev": 1316831030,
+                            //     "torev": 1316867211,
+                            //     "torev_timestamp": "2025-10-14T23:28:22Z",
+                            //     "summary": { "importance": "TRIVIAL", "reason": "...", "summary": "Minor formatting change to the title of Senate Bill 902, with no new information added." }
+                            // },
+                            // {
+                            //     "fromrev": 1316696342,
+                            //     "torev": 1316831030,
+                            //     "torev_timestamp": "2025-10-14T19:00:13Z",
+                            //     "summary": { "importance": "MEDIUM", "reason": "...", "summary": "Added information that SB 79 is expected to increase public transit usage and reduce emissions, traffic congestion, and accidents from automobiles if used for construction projects." }
+                            // }
                         ]
                     }
                 }
@@ -273,15 +274,22 @@
                 getImportanceClass(importance) {
                     return 'importance-' + importance.toLowerCase();
                 },
-                async fetchUpdates() {
-                    await fetch('http://127.0.0.1:8000/json/California_Senate_Bill_79')
+                async fetchUpdates(title) {
+                    await fetch('http://127.0.0.1:8000/json/' + title)
                         .then(response => response.json())
                         .then(data => this.changeData = data)
+                        .catch(error => console.error(error));
+                },
+                async startPageCreation(title) {
+                    console.log('starting page creation')
+                    await fetch('http://127.0.0.1:8000/json_create/' + title)
+                        .then(response => response.json())
+                        // .then(data => this.changeData = data)
                         .catch(error => console.error(error));
                 }
             },
             mounted() {
-                this.fetchUpdates();
+                this.fetchUpdates(this.title);
             }
         }).mount('#app');
     </script>
