@@ -218,6 +218,7 @@
                     changeData: {
                         "page": "California_Senate_Bill_79",
                         "last_checked": "2025-10-18T14:34:31.814508",
+                        "in-progress": false,
                         "changes": [
                             // {
                             //     "fromrev": 1316959601,
@@ -276,16 +277,36 @@
                 },
                 async fetchUpdates(title) {
                     await fetch('http://127.0.0.1:8000/json/' + title)
-                        .then(response => response.json())
+                        .then(response => {
+                            if (response.status === 404) {
+                                this.startPageCreation(title)
+                                return {}
+                            }
+                            console.log("response", response)
+                            return response.json()
+                        })
                         .then(data => this.changeData = data)
-                        .catch(error => console.error(error));
+                        .catch(error => console.error("errrrr", error));
                 },
                 async startPageCreation(title) {
                     console.log('starting page creation')
+                    this.changeData.in_progress = true
+                    this.sleepAndUpdate()
+
                     await fetch('http://127.0.0.1:8000/json_create/' + title)
                         .then(response => response.json())
                         // .then(data => this.changeData = data)
                         .catch(error => console.error(error));
+                    
+                },
+                async sleepAndUpdate() {
+                    while (true) {
+                        await this.sleep(1000);
+                        this.fetchUpdates(this.title);
+                    }
+                },
+                sleep(ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
                 }
             },
             mounted() {
