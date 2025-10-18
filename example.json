@@ -1,0 +1,14 @@
+{
+    "page": "No_Kings_protests_(October_2025)",
+    "last_checked": "2025-10-18T12:57:00Z",
+    "changes": [
+        {
+            "fromrev": 1293623480,
+            "torev": 1317452177,
+            "torev_timestamp": "2025-10-18T16:52:00Z",
+            "importance": "TRIVIAL",
+            "reason": "The edit removes a redundant 'publisher' parameter from a citation template, which is a minor reference cleanup that does not change any factual content or meaning.",
+            "summary": "This is a minor formatting/copyedit/grammar change with no new information."
+        }
+    ]
+}
