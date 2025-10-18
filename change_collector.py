@@ -26,8 +26,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Extract the title from the API URL
-title = "No_Kings_protests_(October_2025)"
-title = "California_Senate_Bill_79"
+
 
 def get_revision_list(title, limit=500):
     """
@@ -35,7 +34,9 @@ def get_revision_list(title, limit=500):
     """
     response = httpx.get(
         f"https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles={title}&rvlimit={limit}&rvprop=ids|timestamp|user|comment|flags&format=json&formatversion=2",
-        headers={"User-Agent": "Wikipedia News Updater (https://github.com/RayBB/wikipedia-news-updater)"},
+        headers={
+            "User-Agent": "Wikipedia News Updater (https://github.com/RayBB/wikipedia-news-updater)"
+        },
     )
     return response.json()
 
@@ -100,17 +101,12 @@ def process_revisions(json_data):
     return result
 
 
-revision_list = get_revision_list(title)
-revisions = process_revisions(revision_list)
-
-revisions_count = len(revisions)
-print(f"Found {revisions_count} revisions with at least one hour between them.")
-
-
 def get_diff(fromrev, torev):
     response = httpx.get(
         f"https://en.wikipedia.org/w/api.php?action=compare&fromrev={fromrev}&torev={torev}&format=json&formatversion=2",
-        headers={"User-Agent": "Wikipedia News Updater (https://github.com/RayBB/wikipedia-news-updater)"},
+        headers={
+            "User-Agent": "Wikipedia News Updater (https://github.com/RayBB/wikipedia-news-updater)"
+        },
     )
     return response.json()["compare"]["body"]
 
@@ -122,18 +118,10 @@ def add_diff_to_revision(revision):
     return new_revision
 
 
-# Create a new array with the diffs
-diff_limit = 10
-new_revisions = []
-for i, revision in enumerate(revisions):
-    if i >= diff_limit:
-        break
-    new_revision = add_diff_to_revision(revision)
-    new_revisions.append(new_revision)
-
 # Write the new array to a JSON file
 import os
 import pathlib
+
 
 def write_output_to_file(data, title):
     current_dir = pathlib.Path(__file__).parent.absolute()
@@ -144,7 +132,6 @@ def write_output_to_file(data, title):
     with open(output_file, "w") as f:
         json.dump(data, f, indent=4)
 
-    print(f"Wrote revisions with diffs to {output_file}")
 
 from openai import OpenAI
 import time
@@ -158,6 +145,7 @@ client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
+
 
 def get_change_summary(diff):
     start_time = time.time()
@@ -177,15 +165,15 @@ def get_change_summary(diff):
                     "properties": {
                         "importance": {
                             "type": "string",
-                            "enum": ["HIGH", "MEDIUM", "LOW", "TRIVIAL"]
+                            "enum": ["HIGH", "MEDIUM", "LOW", "TRIVIAL"],
                         },
                         "reason": {"type": "string"},
-                        "summary": {"type": "string"}
+                        "summary": {"type": "string"},
                     },
                     "required": ["importance", "reason", "summary"],
-                    "additionalProperties": False
-                }
-            }
+                    "additionalProperties": False,
+                },
+            },
         },
         messages=[
             {"role": "system", "content": prompt_text},
@@ -199,16 +187,40 @@ def get_change_summary(diff):
 
     return json.loads(completion.choices[0].message.content)
 
-for revision in new_revisions:
-    if "diff" not in revision:
-        continue
-    summary = get_change_summary(revision["diff"])
-    revision["summary"] = summary
 
-output = {
-    "page": title,
-    "last_checked": datetime.now().isoformat(),
-    "changes": new_revisions
-}
+def start_page_creation(title, diff_limit=10):
+    raw_revisions = get_revision_list(title)
+    revisions = process_revisions(raw_revisions)
+    print(f"Found {len(revisions)} revisions with at least one hour between them.")
 
-write_output_to_file(output, title)
+    new_revisions = []
+    for i, revision in enumerate(revisions):
+        if i >= diff_limit:
+            break
+        new_revision = add_diff_to_revision(revision)
+        new_revisions.append(new_revision)
+
+    output = {
+        "page": title,
+        "last_checked": datetime.now().isoformat(),
+        "in-progress": True,
+        "changes": new_revisions,
+    }
+    write_output_to_file(output, title)
+
+    for revision in new_revisions:
+        if "diff" not in revision:
+            continue
+        summary = get_change_summary(revision["diff"])
+        revision["summary"] = summary
+        write_output_to_file(output, title)
+
+    output["in-progress"] = False
+    write_output_to_file(output, title)
+
+
+if __name__ == "__main__":
+    title = "No_Kings_protests_(October_2025)"
+    title = "California_Senate_Bill_79"
+    title = "SECURE_Act"
+    start_page_creation(title)
