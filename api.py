@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 import json
+from change_collector import start_page_creation
 
 app = FastAPI()
 
@@ -34,4 +35,7 @@ def get_json(filename: str):
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Invalid JSON format")
 
-
+@app.get("/json_create/{filename}")
+def json_create(filename: str, limit: int = 10):
+    start_page_creation(filename, limit)
+    return None
