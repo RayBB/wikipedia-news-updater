@@ -156,6 +156,7 @@ def get_change_summary(diff):
         },
         model="mistralai/mistral-small-3.2-24b-instruct:free",
         # model="z-ai/glm-4.5-air:free",
+        # model="google/gemini-2.5-flash",
         response_format={
             "type": "json_schema",
             "json_schema": {
